@@ -1,7 +1,7 @@
 # HW2 Skeleton
 
 [![Build
-Status](https://travis-ci.org/ucsf-bmi-203-2017/hw2-skeleton.svg?branch=master)](https://travis-ci.org/ucsf-bmi-203-2017/hw2-skeleton)
+Status](https://travis-ci.org/gkreder/BMI203_HW2.svg?branch=master)](https://travis-ci.org/gkreder/BMI203_HW2)
 
 Skeleton for clustering project.
 
@@ -22,7 +22,7 @@ The main file that you will need to modify is `cluster.py` and the corresponding
 ├── README.md
 ├── data
 │   ...
-├── hw2skeleton
+├── gabe_hw2
 │   ├── __init__.py
 │   ├── __main__.py
 │   ├── cluster.py
@@ -42,11 +42,11 @@ conda install --yes --file requirements.txt
 ```
 
 to install all the dependencies in `requirements.txt`. Then the package's
-main function (located in `hw2skeleton/__main__.py`) can be run as
+main function (located in `gabe_hw2/__main__.py`) can be run as
 follows
 
 ```
-python -m hw2skeleton -P data test.txt
+python -m gabe_hw2 -P data test.txt
 ```
 
 ## testing

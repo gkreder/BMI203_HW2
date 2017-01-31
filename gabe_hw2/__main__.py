@@ -4,7 +4,7 @@ from .cluster import cluster_by_partitioning, cluster_hierarchically
 
 # Some quick stuff to make sure the program is called correctly
 if len(sys.argv) < 4:
-    print("Usage: python -m hw2skeleton [-P| -H] <pdb directory> <output file>")
+    print("Usage: python -m gabe_hw2 [-P| -H] <pdb directory> <output file>")
     sys.exit(0)
 
 active_sites = read_active_sites(sys.argv[2])
