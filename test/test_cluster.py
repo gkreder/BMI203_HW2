@@ -1,5 +1,5 @@
-from hw2skeleton import cluster
-from hw2skeleton import io
+from gabe_hw2 import cluster
+from gabe_hw2 import io
 import os
 
 def test_similarity():
