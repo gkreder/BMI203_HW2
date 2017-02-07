@@ -9,9 +9,9 @@ def test_similarity():
     activesite_a = io.read_active_site(filename_a)
     activesite_b = io.read_active_site(filename_b)
 
-    # update this assertion
-    # assert cluster.compute_similarity(activesite_a, activesite_b) == 0.0
-    assert 0.0 == 0.0
+    assert cluster.compute_similarity(activesite_a, activesite_a) == 0.0
+    assert cluster.compute_similarity(activesite_a, activesite_b) == cluster.compute_similarity(activesite_b, activesite_a)
+
 
 def test_partition_clustering():
     # tractable subset
@@ -22,9 +22,14 @@ def test_partition_clustering():
         filepath = os.path.join("data", "%i.pdb"%id)
         active_sites.append(io.read_active_site(filepath))
 
-    # update this assertion
-    # assert cluster.cluster_by_partitioning(active_sites) == []
-    assert [] == []
+    sim_matrix = cluster.get_sim_matrix(active_sites)
+
+    assert cluster.cluster_by_partitioning([], {}) == []
+    assert cluster.cluster_by_partitioning([active_sites[0]], {}) == [[active_sites[0]]]
+    clustering = cluster.cluster_by_partitioning(active_sites, sim_matrix)
+    assert len(clustering) == 1
+    s = set(active_sites)
+    assert set(clustering[0]) == s
 
 def test_hierarchical_clustering():
     # tractable subset
@@ -35,5 +40,12 @@ def test_hierarchical_clustering():
         filepath = os.path.join("data", "%i.pdb"%id)
         active_sites.append(io.read_active_site(filepath))
 
+    sim_matrix = cluster.get_sim_matrix(active_sites)
+
     # update this assertion
-    assert cluster.cluster_hierarchically(active_sites) == []
+    assert cluster.cluster_hierarchically([], {}) == []
+    assert cluster.cluster_hierarchically([active_sites[0]], {}) == [[active_sites[0]]]
+    clustering = cluster.cluster_hierarchically(active_sites, sim_matrix)
+    assert len(clustering) == 2
+    assert clustering[0] == [active_sites[2]]
+    assert set(clustering[1]) == set([active_sites[0], active_sites[1]])
