@@ -1,4 +1,4 @@
-# HW2 Skeleton
+# Gabe Reder HW 2
 
 [![Build
 Status](https://travis-ci.org/gkreder/BMI203_HW2.svg?branch=master)](https://travis-ci.org/gkreder/BMI203_HW2)

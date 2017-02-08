@@ -247,10 +247,7 @@ def k_means(k, active_sites, sim_matrix):
             best_cluster = 0
             for i in range(1, k):
                 cluster = clusters[i]
-                # print(i, clusters)
-                # center_similarity = get_avg_sim(active_site, cluster, sim_matrix)
                 center_similarity = sim_matrix[active_site][cluster_centers[i]]
-                # print(center_similarity)
                 if center_similarity > best_sim_score:
                     best_sim_score = center_similarity
                     best_cluster = i
@@ -326,6 +323,7 @@ def get_optimal_k(active_sites, sim_matrix, plot = False):
         plt.title('Tested k values for Clustering by Partitioning')
         plt.show()
 
+
     return best_k
 
 def compute_worst_similarity(cluster_1, cluster_2, sim_matrix):
@@ -376,9 +374,6 @@ def furthest_neighbor(active_sites, sim_matrix, similarity_cutoff):
 
     while True:
         best_sim = 0.0
-        # cluster_scores = {}
-        # join_cluster_1 = current_clustering[0]
-        # join_cluster_2 = current_clustering[1]
         join_index_1 = 0
         join_index_2 = 1
 
@@ -406,7 +401,6 @@ def furthest_neighbor(active_sites, sim_matrix, similarity_cutoff):
 
         # Initialize a new clustering
         new_clustering = []
-        # print(current_clustering)
         # Create new cluster by joining the two clusters in the previous clustering that
         # produced the best furthest-neighbor similarity score
         joined_cluster = current_clustering[join_index_1] + current_clustering[join_index_2]
@@ -441,7 +435,6 @@ def get_sim_cutoff(active_sites, sim_matrix, plot = False):
     # resulting clustering, calculate the average intra-cluster 
     # similarity score averaged across all clusters
     for current_sim_cutoff in sim_cutoffs:
-        # print(current_sim_cutoff)
         avg_cluster_sim = 0.0
         # clusterings.append(cluster_by_partitioning(active_sites, k))
         # clustering = k_means(k, active_sites, sim_matrix)
@@ -462,9 +455,6 @@ def get_sim_cutoff(active_sites, sim_matrix, plot = False):
     best_cluster_sim = 0.0
     best_avg_diff = 0.0
     clustering_sims_array = np.asarray(clustering_sims)
-    # best_index = clustering_sims.index(np.abs(clustering_sims_array-best_sim_cutoff).argmin())
-    # maxima = []
-    # indices = []
 
     # For every clustering (and respective similarity cutoff value), 
     # look for local maxima in intra-cluster similarities (for which
@@ -490,14 +480,9 @@ def get_sim_cutoff(active_sites, sim_matrix, plot = False):
     # Plotting for visualizing similarity cutoff inputs and
     # resulting intra-cluster similarities
     if plot == True:
-        # print(best_sim_cutoff, [clustering_sims[best_index]])
-        # print(best_sim_cutoff, best_cluster_sim)
         fig = plt.figure()
         plt.plot(sim_cutoffs, clustering_sims)
-        # plt.plot([best_sim_cutoff], [clustering_sims[best_index]], 'r*')
         plt.plot(best_sim_cutoff, best_cluster_sim, 'r*')
-        # for i in range(len(maxima)):
-            # plt.plot([indices[i]], [maxima[i]], 'r*')
         plt.xlabel('similarity cutoff')
         plt.ylabel('Average Inter-Cluster Similarity')
         plt.title('Tested Similarity Cutoffs for Hierarchical clustering')
@@ -550,7 +535,7 @@ def cluster_hierarchically(active_sites, sim_matrix):
     clusterings = furthest_neighbor(active_sites, sim_matrix, similarity_cutoff)
     return clusterings
 
-def measure_quality(clustering, active_sites, sim_matrix):
+def quality_score(clustering, active_sites, sim_matrix):
     """
     Measure the quality of the clustering by taking the average silhouette
     score of all ActiveSites in the clustering. For a given ActiveSite, the 
@@ -590,9 +575,7 @@ def measure_quality(clustering, active_sites, sim_matrix):
     return s
 
 
-
-
-def compare_clusterings(hierarchical_clustering, partioning_clustering, active_sites, sim_matrix):
+def comparison_score(hierarchical_clustering, partioning_clustering, active_sites, sim_matrix):
     """
     Given two clusterings, one hiearchical and one partioning, find their similarity defined as determined
     by the difference between their two respective silouette scores and normalized to the range [0,1] where
@@ -607,10 +590,180 @@ def compare_clusterings(hierarchical_clustering, partioning_clustering, active_s
     """
 
     # Get the two respective silhouette scores
-    h_quality = measure_quality(hierarchical_clustering, active_sites, sim_matrix)
-    p_quality = measure_quality(partioning_clustering, active_sites, sim_matrix)
+    h_quality = quality_score(hierarchical_clustering, active_sites, sim_matrix)
+    p_quality = quality_score(partioning_clustering, active_sites, sim_matrix)
 
     # Find their difference and normalize to [0,1]
     comparison_score = 1.0 - abs(h_quality - p_quality) / 2.0
     return comparison_score
 
+def compare(hierarchical_clustering, partioning_clustering, active_sites, sim_matrix):
+    """
+    Given a hierarchical and partioning clustering, produce a plot that measures their
+    respesctive qualities
+
+    Intput: hierarchical_clustering, partioning_clustering (list of lists of ActiveSites)
+            active_sites (list of ActiveSites)
+            sim_matrix (dictionary of dictionaries)
+
+    Output: None
+    """
+
+    partitioning_qualities = []
+    partioning_clusterings = []
+    top_limit =  int(math.ceil(len(active_sites) * (3.0/5)))
+    k_vals = range(1, top_limit)
+
+    hierarchical_qualities = []
+    hierarchical_clusterings = []
+    sim_cutoffs = np.linspace(0.0,1, len(k_vals))
+
+    comparison_scores = []
+
+    # Calculate partioning and hierarchical clusterings across range of k values and
+    # similarity cutoffs. For each resulting clustering, calculate the quality scores
+    for k in k_vals:
+        partioning_clustering = k_means(k, active_sites, sim_matrix)
+        partioning_clusterings.append(partioning_clustering)
+        quality = quality_score(partioning_clustering, active_sites, sim_matrix)
+        partitioning_qualities.append(quality)
+    for current_sim_cutoff in sim_cutoffs:
+        hierarchical_clustering = furthest_neighbor(active_sites, sim_matrix, current_sim_cutoff)
+        hierarchical_clusterings.append(hierarchical_clustering)
+        quality = quality_score(hierarchical_clustering, active_sites, sim_matrix)
+        hierarchical_qualities.append(quality)
+
+    # Calculate the comparison scores for clusterings produced at the same position in the
+    # range [0,1] of input values (k value for partioning or similary cutoff score for hierarchical)
+    for i in range(len(k_vals)):
+        score = comparison_score(hierarchical_clusterings[i], partioning_clusterings[i], active_sites, sim_matrix)
+        comparison_scores.append(score)
+
+    # Plot the resulting scores
+    k_vals_normalized = np.asarray(k_vals) / np.max(k_vals)
+    fig = plt.figure()
+    plt.plot(k_vals_normalized, partitioning_qualities, label = 'Partitioning Qualities')
+    plt.plot(sim_cutoffs, hierarchical_qualities, label = 'Hierarchical Qualities')
+    plt.plot(k_vals_normalized, comparison_scores, label = 'Comparison Scores')
+    plt.xlabel('normalized k (Partitioning) and similarity cutoffs (Hierarchical)')
+    plt.ylabel('Quality and Comparison Scores')
+    plt.title('Quality and Comparison Scores for Partioning and Hierarchical Clustering')
+    plt.legend()
+    plt.show()
+
+
+def biological_score(cluster):
+    """
+    Produces a measure of how biologically significant a given cluster in the 
+    following manner. For every pair of active sites in the cluster, compute 
+    a sequence similarity score between the two by dividing the number of residues
+    the two sequences have in common by the length of the longer sequence. This 
+    produces a number in the range [0, 1] for every pair of active sites. Average
+    this score across the entire cluster and return as the biological score of the 
+    cluster.
+
+    Input: cluster (list of ActiveSites)
+
+    Output: biological_score (float)
+    """
+    
+    biological_score = 0.0
+    # For every pair of active sites in the 
+    # cluster, find the residues (types of residues) in their
+    # sequences and count the number of residues that they
+    # have in common. 
+    for i in range(len(cluster)):
+        for j in range(i + 1, len(cluster)):
+            pair_score = 0.0
+            residues_1 = []
+            residues_2 = []
+            for residue in cluster[i].residues:
+                residues_1.append(residue.type)
+            for residue in cluster[j].residues:
+                residues_2.append(residue.type)
+
+            for residue_type in set(residues_1):
+                pair_score += residues_2.count(residue_type)
+
+            # Divide the number of residues they have in common
+            # by the length of the longer sequence
+            pair_score = pair_score / max(len(residues_1), len(residues_2))
+
+            biological_score += pair_score
+            
+    if len(cluster) > 1:
+        biological_score = biological_score / (0.5 * (len(cluster) - 1) * len(cluster))
+
+
+    return biological_score
+
+
+def clustering_biology(clustering, active_sites, sim_matrix):
+    """
+    Given a clustering, calculate the average cluster biological
+    significance score across all clusters
+
+    Intput: clustering (list of lists of ActiveSites)
+            active_sites (list of ActiveSites)
+            sim_matrix (dictionary of dictionaries)
+
+    Output: avg_bio_score (float)
+    """
+
+    # Calculate biological score for every cluster in 
+    # clustering then average
+    avg_bio_score = 0.0
+    for cluster in clustering:
+        avg_bio_score += biological_score(cluster)
+
+    avg_bio_score = avg_bio_score / float(len(clustering))
+    return avg_bio_score
+
+def compare_biology_significance(hierarchical_clustering, partioning_clustering, active_sites, sim_matrix):
+    """
+    Given a hierarchical and partioning clustering, produce a plot that measures their
+    respesctive qualities
+
+    Intput: hierarchical_clustering, partioning_clustering (list of lists of ActiveSites)
+            active_sites (list of ActiveSites)
+            sim_matrix (dictionary of dictionaries)
+
+    Output: None
+    """
+
+    partitioning_biology_scores = []
+    partioning_clusterings = []
+    top_limit =  int(math.ceil(len(active_sites) * (3.0/5)))
+    k_vals = range(1, top_limit)
+
+    hierarchical_biology_scores = []
+    hierarchical_clusterings = []
+    sim_cutoffs = np.linspace(0.0,1, len(k_vals))
+
+
+    # Calculate partioning and hierarchical clusterings across range of k values and
+    # similarity cutoffs. For each resulting clustering, calculate the biological 
+    # significance scores
+    for k in k_vals:
+        partioning_clustering = k_means(k, active_sites, sim_matrix)
+        partioning_clusterings.append(partioning_clustering)
+        biology = clustering_biology(partioning_clustering, active_sites, sim_matrix)
+        partitioning_biology_scores.append(biology)
+    for current_sim_cutoff in sim_cutoffs:
+        hierarchical_clustering = furthest_neighbor(active_sites, sim_matrix, current_sim_cutoff)
+        hierarchical_clusterings.append(hierarchical_clustering)
+        biology = clustering_biology(hierarchical_clustering, active_sites, sim_matrix)
+        hierarchical_biology_scores.append(biology)
+
+
+    # Plot the resulting biology scores for all resulting clusterings
+    k_vals_normalized = np.asarray(k_vals) / np.max(k_vals)
+    fig = plt.figure()
+    plt.plot(k_vals_normalized, partitioning_biology_scores, label = 'Partitioning')
+    plt.plot(sim_cutoffs, hierarchical_biology_scores, label = 'Hierarchical')
+    plt.xlabel('normalized k (Partitioning) and similarity cutoffs (Hierarchical)')
+    plt.ylabel('Biological Significance Scores')
+    plt.title('Biological Significance for Partioning and Hierarchical Clustering')
+    plt.legend()
+    plt.show()
+    
